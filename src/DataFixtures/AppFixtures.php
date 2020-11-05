@@ -22,21 +22,37 @@ class AppFixtures extends Fixture
     public function load(ObjectManager $manager)
     {
         $fake = Factory::create();
-        for($u=0;$u<10;$u++){
-            $user= new User();
-            $passhash= $this->encoder->encodePassword($user,'password');
+
+        /*$defaultUser = new User();
+        $passHash = $this->encoder->encodePassword($defaultUser, self::DEFAULT_USER['password']);
+
+        $defaultUser->setEmail(self::DEFAULT_USER['email'])
+            ->setPassword($passHash);
+
+        $manager->persist($defaultUser);*/
+
+        for ($u = 0; $u < 10; ++$u) {
+            $user = new User();
+
+            $passHash = $this->encoder->encodePassword($user, 'password');
+
             $user->setEmail($fake->email)
-                 ->setPassword($passhash);
-                
+                ->setPassword($passHash);
+
+            if (0 === $u % 3) {
+                $user->setStatus(false)
+                    ->setAge(23);
+            }
+
             $manager->persist($user);
 
-            for($a=0;$a<random_int(5,15);$a++){
+            for ($a = 0; $a < random_int(5, 15); ++$a) {
                 $article = (new Article())->setAuthor($user)
-                ->setContent($fake->text(300))
-                ->setName($fake->text(50));
-                $manager->persist($article);
-            }     
+                    ->setContent($fake->text(300))
+                    ->setName($fake->text(50));
 
+                $manager->persist($article);
+            }
         }
 
         $manager->flush();

@@ -3,33 +3,52 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use ApiPlatform\Core\Annotation\ApiResource;
+
 use App\Repository\UserRepository;
+
+use ApiPlatform\Core\Annotation\ApiFilter;
+use ApiPlatform\Core\Annotation\ApiResource;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\BooleanFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\DateFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ExistsFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\NumericFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\OrderFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\RangeFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * @ORM\Entity(repositoryClass=UserRepository::class)
- * @ORM\HasLifecycleCallbacks()
+ * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
  * @ApiResource(
  *     collectionOperations={
- *         "get"={"normalization_context"={"groups"={"user_read"}}
+ *          "get"={
+ *              "normalization_context"={"groups"={"user_read"}}
  *          },
  *          "post"
- *                   
  *      },
- *      itemOperations={
- *         "get"={"normalization_context"={"groups"={"user_details_read"}}
- *         },
+ *     itemOperations={
+ *          "get"={
+ *              "normalization_context"={"groups"={"user_details_read"}}
+ *          },
  *          "put",
  *          "patch",
  *          "delete"
- *     } 
+ *     }
  * )
- *  
+ * @ApiFilter(SearchFilter::class, properties={"email": "partial"})
+ * @ApiFilter(DateFilter::class, properties={"createdAt"})
+ * @ApiFilter(BooleanFilter::class, properties={"status"})
+ * @ApiFilter(NumericFilter::class, properties={"age"})
+ * @ApiFilter(RangeFilter::class, properties={"age"})
+ * @ApiFilter(ExistsFilter::class, properties={"updatedAt"})
+ * @ApiFilter(OrderFilter::class, properties={"id"}, arguments={"orderParameterName"="order"})
+ * @UniqueEntity("email", message="Cette email est deja utilisé")
  */
 class User implements UserInterface
 {
@@ -38,7 +57,9 @@ class User implements UserInterface
 
     /**
      * @ORM\Column(type="string", length=180, unique=true)
-     * @Groups({"user_read", "user_details_read"})
+     * @Groups({"user_read", "user_details_read", "article_details_read"})
+     * @Assert\NotBlank(message="L'email est obligatoire")
+     * @Assert\Email(message="email format invalide")
      */
     private string $email;
 
@@ -50,19 +71,35 @@ class User implements UserInterface
     /**
      * @var string The hashed password
      * @ORM\Column(type="string")
+     * @Assert\NotBlank(message="Le Mot de Passe est obligatoire")
      */
     private string $password;
 
     /**
-     * @ORM\OneToMany(targetEntity=Article::class, mappedBy="author")
+     * @ORM\OneToMany(targetEntity="App\Entity\Article", mappedBy="author", orphanRemoval=true)
      * @Groups({"user_details_read"})
      */
     private Collection $articles;
 
+    /**
+     * @ORM\Column(type="boolean")
+     * @Groups({"user_read", "user_details_read", "article_details_read"})
+     */
+    private bool $status;
+
+    /**
+     * @ORM\Column(type="integer")
+     * @Groups({"user_read", "user_details_read", "article_details_read"})
+     */
+    private int $age;
+
     public function __construct()
     {
         $this->articles = new ArrayCollection();
-        $this->createdAt = new \dateTimeImmutable();
+        $this->createdAt = new \DateTime();
+        $this->status = true;
+
+        $this->age = 18;
     }
     
 
@@ -159,12 +196,33 @@ class User implements UserInterface
 
     public function removeArticle(Article $article): self
     {
-        if ($this->articles->removeElement($article)) {
-            // set the owning side to null (unless already changed)
-            if ($article->getAuthor() === $this) {
-                $article->setAuthor(null);
-            }
+        if ($this->articles->contains($article)) {
+            $this->articles->removeElement($article);
         }
+
+        return $this;
+    }
+
+    public function getStatus(): ?bool
+    {
+        return $this->status;
+    }
+
+    public function setStatus(bool $status): self
+    {
+        $this->status = $status;
+
+        return $this;
+    }
+
+    public function getAge(): ?int
+    {
+        return $this->age;
+    }
+
+    public function setAge(int $age): self
+    {
+        $this->age = $age;
 
         return $this;
     }

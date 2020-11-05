@@ -4,28 +4,36 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use ApiPlatform\Core\Annotation\ApiResource;
-use App\Repository\ArticleRepository;
+use App\Controller\ArticleUpdatedAt;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 
 /**
- * @ORM\Entity(repositoryClass=ArticleRepository::class)
+ * @ORM\Entity(repositoryClass="App\Repository\ArticleRepository")
  * @ORM\HasLifecycleCallbacks()
- * @ApiResource(collectionOperations={
- *         "get"={"normalization_context"={"groups"={"article_read"}}
+ * @ApiResource(
+ *     collectionOperations={
+ *          "get"={
+ *              "normalization_context"={"groups"={"article_read"}}
  *          },
  *          "post"
- *                   
  *      },
- *      itemOperations={
- *         "get"={"normalization_context"={"groups"={"article_details_read"}}
- *         },
+ *     itemOperations={
+ *          "get"={
+ *              "normalization_context"={"groups"={"article_details_read"}}
+ *          },
  *          "put",
  *          "patch",
- *          "delete"
- *     } 
- * )
+ *          "delete",
+ *          "put_updated_at"={
+ *              "method"="PUT",
+ *              "path"="/articles/{id}/updated-at",
+ *              "controller"=ArticleUpdatedAt::class,
+ *          }
+ *     }
+ *     )
  */
 class Article
 {
@@ -40,19 +48,20 @@ class Article
 
     /**
      * @ORM\Column(type="text")
-     * @Groups({"article_read","user_details_read"})
+     * @Groups({"article_read", "user_details_read", "article_details_read"})
      */
     private string $content;
 
     /**
      * @ORM\ManyToOne(targetEntity=User::class, inversedBy="articles")
-     * * @Groups({"article_details_read"})
+     * @ORM\JoinColumn(nullable=false)
+     * @Groups({"article_details_read"})
      */
     private User $author;
 
     public function __construct()
     {
-        $this->createdAt = new \dateTimeImmutable();
+        $this->createdAt = new \DateTime();
     }
     
     
@@ -80,12 +89,12 @@ class Article
         return $this;
     }
 
-    public function getAuthor(): ?User
+    public function getAuthor(): UserInterface
     {
         return $this->author;
     }
 
-    public function setAuthor(?User $author): self
+    public function setAuthor(UserInterface $author): self
     {
         $this->author = $author;
 
