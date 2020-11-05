@@ -3,39 +3,59 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use DateTime;
+use DateTimeInterface;
+use Doctrine\ORM\Mapping as ORM;
+
 trait Timestapable
 {
     /**
-     * @var \DateTimeInterface
-     * @ORM\Column(type="datetime")
+     * @ORM\Column(name="created_at", type="datetime", nullable=true)
      */
-    private \DateTimeInterface $createdAt;
-
+    private $createdAt;
 
     /**
-     * @var \DateTimeInterface
-     * @ORM\Column(type="datetime" , nullable=true)
+     * @ORM\Column(name="updated_at", type="datetime", nullable=true)
      */
-    private \DateTimeInterface $updatedAt;
+    private $updatedAt;
 
-    
-    public function getCreatedAt(): \DateTimeInterface
+    public function getCreatedAt(): ?DateTimeInterface
     {
-        return this.$createdAt;
+        return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeInterface $createdAt): Timestapable
+    public function setCreatedAt(?DateTimeInterface $timestamp): self
     {
-        this.$createdAt = $createdAt;
-    }
-    public function getUpdatedAt(): \DateTimeInterface
-    {
-        return this.$updatedAt;
+        $this->createdAt = $timestamp;
+        return $this;
     }
 
-    public function setUpdatedAt(\DateTimeInterface $updatedAt): Timestapable 
+    public function getUpdatedAt(): ?DateTimeInterface
     {
-        this.$updatedAt = $updatedAt;
+        return $this->updatedAt;
     }
 
+    public function setUpdatedAt(?DateTimeInterface $timestamp): self
+    {
+        $this->updatedAt = $timestamp;
+        return $this;
+    }
+
+    /**
+     * @ORM\PrePersist
+     */
+    public function setCreatedAtAutomatically()
+    {
+        if ($this->getCreatedAt() === null) {
+            $this->setCreatedAt(new \DateTime());
+        }
+    }
+
+    /**
+     * @ORM\PreUpdate
+     */
+    public function setUpdatedAtAutomatically()
+    {
+        $this->setUpdatedAt(new DateTime());
+    }
 }
