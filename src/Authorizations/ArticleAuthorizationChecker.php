@@ -42,7 +42,7 @@ class ArticleAuthorizationChecker
     public function isAuthenticated():void 
     {
         if(null === $this->user){
-            $errorMessage = "you are not autheticated";
+            $errorMessage = "you are not authenticated";
             throw new UnauthorizedHttpException($errorMessage , $errorMessage);
         }
     }
