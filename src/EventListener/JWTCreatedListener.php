@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\EventListener;
@@ -9,20 +10,17 @@ use Symfony\Component\Security\Core\User\UserInterface;
 
 class JWTCreatedListener
 {
-
-    private Security $security;
-    //private UserInterface $user;
+    private UserInterface $user;
 
     public function __construct(Security $security)
     {
-        $this->security = $security;
+        $this->user = $security->getUser();
     }
+
     public function onJWTCreated(JWTCreatedEvent $event)
     {
         $payload = $event->getData();
-        $payload['createdAt'] = $this->security->getUser()->getCreatedAT();
-        //$payload['createdAt'] = $this->user->getCreatedAT();
-
+        $payload['createdAt'] = $this->user->getCreatedAt();
         $event->setData($payload);
     }
 }
